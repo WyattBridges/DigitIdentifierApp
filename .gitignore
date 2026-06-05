@@ -1,1 +1,2 @@
-model_services/venv/Lib
+model_services/venv
+model_services/app/__pycache__
