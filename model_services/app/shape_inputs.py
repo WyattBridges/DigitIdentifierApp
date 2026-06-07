@@ -3,7 +3,7 @@ import tensorflow as tf
 
 # function for shaping and scaling inputs in preparation for models that accept flattened inputs
 def flatten_inputs(x):
-    x = x.reshape(len(x), 28*28)
+    x = x.reshape(1, 28*28)
     x = x.astype('float32')
     x /= 255
     return x
