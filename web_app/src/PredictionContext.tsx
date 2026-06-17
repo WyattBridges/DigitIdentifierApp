@@ -1,5 +1,8 @@
 import { createContext, useState, useRef, useEffect } from "react";
 
+const createEmptyGrid = () => Array.from({ length: 28 }, () => Array.from({ length: 28 }, () => 0));
+const createEmptyPrediction = () => Array.from({ length: 10 }, () => 0);
+
 export interface PredictionContextType {
     apiStatus : 'ready' | 'predicting' | 'not_available'
     selectedModel : 'dense' | 'convolutional'
@@ -15,12 +18,15 @@ export const PredictionContext = createContext<PredictionContextType | undefined
 export const PredictionProvider = ({ children }: { children: React.ReactNode }) => {
     const [apiStatus, setApiStatus] = useState<'ready' | 'predicting' | 'not_available'>('not_available');
     const [selectedModel, setSelectedModel] = useState<'dense' | 'convolutional'>('dense');
-    const grid = useRef<number[][]>(Array(28).fill(Array(28).fill(0)));
-    const mostRecentPrediction = useRef<number[]>(Array(10).fill(0));
+    const grid = useRef<number[][]>(createEmptyGrid());
+    const mostRecentPrediction = useRef<number[]>(createEmptyPrediction());
 
     // Define callbacks for updating grid and prediction values
     const setGridValue = (row: number, col: number, value: number) => {
-        grid.current[row][col] = value;
+        if (row < 0 || row >= grid.current.length) return;
+        if (col < 0 || col >= grid.current[row].length) return;
+        const nextValue = Math.max(0, Math.min(255, Math.round(value)));
+        grid.current[row][col] = nextValue;
     }
 
     const setPredictionValue = (index: number, value: number) => {
@@ -53,7 +59,7 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    pixels: grid.current
+                    pixels: grid.current.map((row) => [...row])
                 })
             });
             const data = await response.json();
