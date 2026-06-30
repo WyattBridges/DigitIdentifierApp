@@ -69,91 +69,6 @@
   }
 }
 
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  &>div {
-    flex: 1 1 0;
-    padding: 32px;
-
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
-}
-
 #spacer {
   height: 88px;
   border-top: 1px solid var(--border);
@@ -178,19 +93,28 @@
   justify-items: center;
 }
 
-.app-shell__eyebrow,
+.app-shell__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 32px;
+  color: var(--accent);
+  font-weight: bold;
+}
+
 .painter__eyebrow {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.28em;
-  font-size: 12px;
+  font-size: 24px;
   color: var(--accent);
+  font-weight: bold;
 }
 
 .app-shell__intro p:last-child,
 .painter__hint {
   max-width: 72ch;
-  color: var(--text);
+  color: #ccc;
 }
 
 .painter {
@@ -336,6 +260,41 @@
 .app-shell__status strong {
   color: var(--text-h);
   font-size: 22px;
+}
+
+.app-shell__selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.app-shell__selector label {
+  color: #fff;
+}
+
+.app-shell__selector select {
+  background: var(--text-h);
+  color: #1b1b1f;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+}
+
+.app-shell_results {
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+}
+
+.app-shell_results th,
+td {
+  color: #fff;
+  width: auto;
+  padding: 8px;
+  text-align: center;
+  font-size: 24px;
 }
 
 @media (max-width: 1024px) {
