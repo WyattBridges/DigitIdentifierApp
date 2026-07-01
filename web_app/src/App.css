@@ -146,7 +146,7 @@
 .painter__clear,
 .app-shell__predict {
   border: 1px solid var(--border);
-  background: var(--text-h);
+  background: #fff;
   color: #1b1b1f;
   border-radius: 999px;
   padding: 12px 18px;
@@ -271,11 +271,11 @@
 }
 
 .app-shell__selector label {
-  color: #fff;
+  color: var(--text);
 }
 
 .app-shell__selector select {
-  background: var(--text-h);
+  background: #fff;
   color: #1b1b1f;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -290,7 +290,7 @@
 
 .app-shell_results th,
 td {
-  color: #fff;
+  color: var(--text-h);
   width: auto;
   padding: 8px;
   text-align: center;
