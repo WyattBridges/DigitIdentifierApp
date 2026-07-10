@@ -12,6 +12,9 @@ This project allows users to draw their own handwritten digits, select a model, 
 
 At this time, only a dense model and a convolutional model (with a structure similar to LeNet-5) are available.
 
+## Presentation
+The presentation of information on this application is available here: [https://www.youtube.com/watch?v=1ZwbT7PJPJQ](https://www.youtube.com/watch?v=1ZwbT7PJPJQ)
+
 ## Build Instructions
 To build the Python backend and its environment, start in a terminal at the root directory of the project, and run the following:
 ```bash
