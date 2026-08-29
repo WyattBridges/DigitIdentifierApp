@@ -1,0 +1,20 @@
+{
+    "models": [
+        {
+            "name": "Dense Neural Network",
+            "description": "A dense neural network, with two hidden layers of 128 and 64 neurons respectively, ReLU activation, 50% dropout, and 10 output neurons with softmax.",
+            "endpoint_extension": "dense",
+            "model_path": "app/models/dense_model.keras",
+            "diagram_path": "",
+            "input_shaping": "flatten"
+        },
+        {
+            "name": "Convolutional Neural Network",
+            "description": "A convolutional neural network, with a structure similar to LeNet-5 (includes small differences in how padding is handled for inputs and hidden layers).",
+            "endpoint_extension": "convolutional",
+            "model_path": "app/models/convolutional_model.keras",
+            "diagram_path": "",
+            "input_shaping": "32x32"
+        }
+    ]
+}
