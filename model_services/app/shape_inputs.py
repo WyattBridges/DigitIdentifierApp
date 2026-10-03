@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 
 # function for shaping and scaling inputs in preparation for models that accept flattened inputs
 def flatten_inputs(x):

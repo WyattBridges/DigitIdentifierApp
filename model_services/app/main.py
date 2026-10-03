@@ -1,28 +1,46 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
-import keras
+import json
 import numpy as np
-import os
 
 from app.image_28x28 import Image28x28
 from app.prediction_response import PredictionResponse
 from app.shape_inputs import *
+from app.available_model import AvailableModel
 
-dense_model_path = "app/models/dense_model.keras"
-convolutional_model_path = "app/models/convolutional_model.keras"
-dense_model = None
-convolutional_model = None
+model_registry_path = 'app/available_models.json'
 
-# Function for loading deep-learning models from a path if the file exists
-def load_if_exists(path):
-    if os.path.exists(path):
-        return keras.models.load_model(path)
-    else:
-        return None
+@asynccontextmanager
+async def loadModels(app: FastAPI):
+    app.state.data = {}
+    try:
+        # attempt to load each model from the available models file
+        j = None
+        with open(model_registry_path) as f:
+            j = json.load(f)
+        for listing in j["models"]:
+            name = listing["name"]
+            extension = listing["endpoint_extension"]
+            model_path = listing["model_path"]
+            shaping_function = listing["input_shaping"]
+            description = listing["description"] if listing["description"] else ""
+            diagram_path = listing["diagram_path"] if listing["diagram_path"] else ""
+            model = AvailableModel(name, extension, model_path, shaping_function, description, diagram_path)
+            app.state.data[extension] = model
+            
+    except Exception as e:
+        print(e)
+        return
+    
+    yield
 
-app = FastAPI()
+    # clear before ending
+    app.state.data.clear()
+
+app = FastAPI(lifespan=loadModels)
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,33 +87,11 @@ def health_check():
     return {"status": "ok"}
 
 # API endpoint for prediction with a dense model
-@app.post("/api/predict/dense", response_model=PredictionResponse)
-def predict(image: Image28x28):
-    global dense_model
-    # Check if the dense model is available
-    if dense_model is None:
-        dense_model = load_if_exists(dense_model_path)
-
-    # Convert to NumPy and reshape for processing
+@app.post("/api/predict/{extension}", response_model=PredictionResponse)
+def predict(extension: str, image: Image28x28):
+    if extension not in app.state.data:
+        return PredictionResponse(values = [0] * 10)
+    
     array = np.array(image.pixels, dtype=np.float32)
-    data = flatten_inputs(array)
-
-    # Make a prediction
-    model_out = dense_model.predict(data, verbose=0)
-    return PredictionResponse(values = model_out.reshape(10).tolist())
-
-# API endpoint for prediction with a dense model
-@app.post("/api/predict/convolutional", response_model=PredictionResponse)
-def predict(image: Image28x28):
-    global convolutional_model
-    # Check if the dense model is available
-    if convolutional_model is None:
-        convolutional_model = load_if_exists(convolutional_model_path)
-
-    # Convert to NumPy and reshape for processing
-    array = np.array(image.pixels, dtype=np.float32)
-    data = inputs_as_square_32x32(array)
-
-    # Make a prediction
-    model_out = convolutional_model.predict(data, verbose=0)
+    model_out = app.state.data[extension].make_prediction(array)
     return PredictionResponse(values = model_out.reshape(10).tolist())

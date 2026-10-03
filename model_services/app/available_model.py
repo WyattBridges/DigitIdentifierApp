@@ -1,5 +1,7 @@
 import keras
+import numpy as np
 import os
+from typing import Callable
 
 from app.shape_inputs import available_functions
 
@@ -10,7 +12,7 @@ class AvailableModel:
     endpoint_extension: str     # Extension to use for calling the prediction endpoint or obtaining its diagram
     model_object: str           # Keras model object that is loaded upon startup
     model_diagram_path: str     # Path to the model_diagram; may be an empty string
-    input_shaping_func: function    # Input shaping function to use when shaping inputs before prediction
+    input_shaping_func: Callable[[np.ndarray], np.ndarray]    # Input shaping function to use when shaping inputs before prediction
 
     def __init__(self, name, endpoint_extension, obj_path, input_shaping, description='', diagram_path=''):
         self.name = name
