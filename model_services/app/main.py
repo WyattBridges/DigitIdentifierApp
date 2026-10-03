@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -30,7 +30,7 @@ async def loadModels(app: FastAPI):
             diagram_path = listing["diagram_path"] if listing["diagram_path"] else ""
             model = AvailableModel(name, extension, model_path, shaping_function, description, diagram_path)
             app.state.data[extension] = model
-            
+
     except Exception as e:
         print(e)
         return
@@ -63,8 +63,20 @@ def read_root():
             <h1>Welcome to the Handwritten Digit Neural Network API</h1>
             <p>This API provides access to neural networks for classifying handwritten digits.</p>
             <p>Check the /api/health endpoint for API status.</p>
-            <p>Use /api/predict/dense to use a dense model for prediction.</p>
-            <p>Use /api/predict/convolutional to use a convolutional model for prediction.</p>
+            <p>Use /api/available_models to view which models are available.</p>
+            <p>This endpoint will return a list of models in the following format:</p>
+            <div>
+            {
+                "models": [
+                    {
+                        "Name": ...,
+                        "Description": ...,
+                        "Endpoint Extension": ...
+                    }, ...
+                ]
+            }
+            </div>
+            <p>Send a POST request to /api/predict/{extension} to receive a prediction from the desired model.</p>
             <p>When calling any prediction endpoint, use the following JSON structure:</p>
             <div>
                 {
@@ -85,6 +97,14 @@ def read_root():
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
+
+# API endpoint for acquiring information on available models
+@app.get("/api/available_models")
+def getAvailableModels():
+    arr = []
+    for model in app.state.data.values():
+        arr.append(model.get_client_API_info())
+    return JSONResponse(content={"models": arr})
 
 # API endpoint for prediction with a dense model
 @app.post("/api/predict/{extension}", response_model=PredictionResponse)
