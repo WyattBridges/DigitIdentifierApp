@@ -4,6 +4,9 @@ import { type AvailableModel, type PredictionContextType } from "./types";
 const createEmptyGrid = () => Array.from({ length: 28 }, () => Array.from({ length: 28 }, () => 0));
 const createEmptyPrediction = () => Array.from({ length: 10 }, () => 0);
 
+const api_host = import.meta.env.API_HOST || 'localhost';
+const api_port = import.meta.env.API_PORT || '8000';
+
 export const PredictionContext = createContext<PredictionContextType | undefined>(undefined);
 
 export const PredictionProvider = ({ children }: { children: React.ReactNode }) => {
@@ -28,7 +31,7 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
     // Fetch API status on startup
     const checkApiStatus = async () => {
         try {
-            const response = await fetch("http://localhost:8000/api/health");
+            const response = await fetch(`http://${api_host}:${api_port}/api/health`);
             const data = await response.json();
             if (data.status == "ok") setApiStatus("ready");
             else setApiStatus("not_available");
@@ -45,7 +48,7 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
     // Fetch available models on startup
     const getAvailableModels = async () => {
         try {
-            const response = await fetch("http://localhost:8000/api/available_models");
+            const response = await fetch(`http://${api_host}:${api_port}/api/available_models`);
             const data = await response.json();
             availableModels.current = data["models"].map((model: any) => {
                 let m : AvailableModel = {
@@ -71,7 +74,7 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
         if (apiStatus !== 'ready') return;
         setApiStatus('predicting');
         try {
-            const response = await fetch(`http://localhost:8000/api/predict/${selectedModel}`, {
+            const response = await fetch(`http://${api_host}:${api_port}/api/predict/${selectedModel}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
