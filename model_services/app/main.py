@@ -32,7 +32,10 @@ async def loadModels(app: FastAPI):
             app.state.data[extension] = model
 
     except Exception as e:
-        print(e)
+        print("Error loading models.")
+        print("The model registry file was expected at the following path: " + model_registry_path)
+        print("It is expected to be a JSON file with the following structure:")
+        print('{"models": [{"name": "Model Name", "description": "Model Description", "endpoint_extension": "model_endpoint", "model_path": "path/to/model.keras", "diagram_path": "path/to/diagram.png", "input_shaping": "input_shaping"}]}')
         return
     
     yield

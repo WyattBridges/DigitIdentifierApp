@@ -1,20 +1,23 @@
 import { useContext } from "react";
-import { PredictionContext, type PredictionContextType } from "../PredictionContext";
+import { PredictionContext } from "../PredictionContext";
+import { type AvailableModel, type PredictionContextType } from "../types";
 
 function ModelSelector() {
-    const { selectedModel, setSelectedModel } = useContext(PredictionContext) as PredictionContextType;
+    const { selectedModel, setSelectedModel, availableModels } = useContext(PredictionContext) as PredictionContextType;
 
     const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newModel = event.target.value as 'dense' | 'convolutional';
-        setSelectedModel(newModel);
+        setSelectedModel(event.target.value);
     }
 
     return (
         <div className="app-shell__selector">
             <label>Select a model:</label>
             <select value={selectedModel} onChange={handleModelChange}>
-                <option value="dense">Dense</option>
-                <option value="convolutional">Convolutional</option>
+                {availableModels.map((model: AvailableModel) => (
+                    <option key={model.name} value={model.endpoint_extension} title={model.description}>
+                        {model.name}
+                    </option>
+                ))}
             </select>
         </div>
     );

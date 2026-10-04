@@ -1,23 +1,15 @@
 import { createContext, useState, useRef, useEffect } from "react";
+import { type AvailableModel, type PredictionContextType } from "./types";
 
 const createEmptyGrid = () => Array.from({ length: 28 }, () => Array.from({ length: 28 }, () => 0));
 const createEmptyPrediction = () => Array.from({ length: 10 }, () => 0);
-
-export interface PredictionContextType {
-    apiStatus : 'ready' | 'predicting' | 'not_available'
-    selectedModel : 'dense' | 'convolutional'
-    grid : number[][]
-    mostRecentPrediction : number[]
-    setSelectedModel : (model: 'dense' | 'convolutional') => void
-    setGridValue : (row: number, col: number, value: number) => void
-    getPrediction : () => Promise<void>
-}
 
 export const PredictionContext = createContext<PredictionContextType | undefined>(undefined);
 
 export const PredictionProvider = ({ children }: { children: React.ReactNode }) => {
     const [apiStatus, setApiStatus] = useState<'ready' | 'predicting' | 'not_available'>('not_available');
-    const [selectedModel, setSelectedModel] = useState<'dense' | 'convolutional'>('dense');
+    const [selectedModel, setSelectedModel] = useState<string>('');
+    const availableModels = useRef<AvailableModel[]>([]);
     const grid = useRef<number[][]>(createEmptyGrid());
     const mostRecentPrediction = useRef<number[]>(createEmptyPrediction());
 
@@ -33,7 +25,7 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
         mostRecentPrediction.current[index] = value;
     }
 
-    // Fetch API status on mount
+    // Fetch API status on startup
     const checkApiStatus = async () => {
         try {
             const response = await fetch("http://localhost:8000/api/health");
@@ -48,6 +40,30 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
 
     useEffect(() => {
         checkApiStatus();
+    }, []);
+
+    // Fetch available models on startup
+    const getAvailableModels = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/available_models");
+            const data = await response.json();
+            availableModels.current = data["models"].map((model: any) => {
+                let m : AvailableModel = {
+                    name: model["Name"],
+                    description: model["Description"],
+                    endpoint_extension: model["Endpoint Extension"]
+                };
+                return m;
+            });
+            setSelectedModel(availableModels.current[0]?.endpoint_extension || '');
+        }
+        catch (error) {
+            console.error("Error fetching available models:", error);
+        }
+    }
+
+    useEffect(() => {
+        getAvailableModels();
     }, []);
 
     // Define function to get predictions from the API
@@ -79,7 +95,7 @@ export const PredictionProvider = ({ children }: { children: React.ReactNode }) 
 
     // Return the provider with the context value
     return (
-        <PredictionContext.Provider value={{ apiStatus, selectedModel, grid: grid.current, mostRecentPrediction: mostRecentPrediction.current, setSelectedModel, setGridValue, getPrediction }}>
+        <PredictionContext.Provider value={{ apiStatus, selectedModel, grid: grid.current, mostRecentPrediction: mostRecentPrediction.current, setSelectedModel, setGridValue, getPrediction, availableModels: availableModels.current }}>
             {children}
         </PredictionContext.Provider>
     );
