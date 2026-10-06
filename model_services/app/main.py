@@ -1,26 +1,49 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, conint, conlist, field_validator
-from typing import List, Annotated
-import keras
+from contextlib import asynccontextmanager
+
+import json
 import numpy as np
-import os
+
+from app.image_28x28 import Image28x28
+from app.prediction_response import PredictionResponse
 from app.shape_inputs import *
+from app.available_model import AvailableModel
 
-dense_model_path = "app/models/dense_model.keras"
-convolutional_model_path = "app/models/convolutional_model.keras"
-dense_model = None
-convolutional_model = None
+model_registry_path = 'app/available_models.json'
 
-# Function for loading deep-learning models from a path if the file exists
-def load_if_exists(path):
-    if os.path.exists(path):
-        return keras.models.load_model(path)
-    else:
-        return None
+@asynccontextmanager
+async def loadModels(app: FastAPI):
+    app.state.data = {}
+    try:
+        # attempt to load each model from the available models file
+        j = None
+        with open(model_registry_path) as f:
+            j = json.load(f)
+        for listing in j["models"]:
+            name = listing["name"]
+            extension = listing["endpoint_extension"]
+            model_path = listing["model_path"]
+            shaping_function = listing["input_shaping"]
+            description = listing["description"] if listing["description"] else ""
+            diagram_path = listing["diagram_path"] if listing["diagram_path"] else ""
+            model = AvailableModel(name, extension, model_path, shaping_function, description, diagram_path)
+            app.state.data[extension] = model
 
-app = FastAPI()
+    except Exception as e:
+        print("Error loading models.")
+        print("The model registry file was expected at the following path: " + model_registry_path)
+        print("It is expected to be a JSON file with the following structure:")
+        print('{"models": [{"name": "Model Name", "description": "Model Description", "endpoint_extension": "model_endpoint", "model_path": "path/to/model.keras", "diagram_path": "path/to/diagram.png", "input_shaping": "input_shaping"}]}')
+        return
+    
+    yield
+
+    # clear before ending
+    app.state.data.clear()
+
+app = FastAPI(lifespan=loadModels)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,23 +52,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-Pixel = Annotated[int, conint(ge=0, le=255)]
-
-class Image28x28(BaseModel):
-    pixels: List[List[Pixel]]
-
-    @field_validator("pixels")
-    def check_shape(cls, v):
-        if len(v) != 28:
-            raise ValueError("Image must have 28 rows")
-        for row in v:
-            if len(row) != 28:
-                raise ValueError("Each row must have 28 columns")
-        return v
-
-class PredictionResponse(BaseModel):
-    values: List[float] = conlist(float, min_length = 10, max_length = 10)
 
 
 # Main Application Endpoint
@@ -60,8 +66,20 @@ def read_root():
             <h1>Welcome to the Handwritten Digit Neural Network API</h1>
             <p>This API provides access to neural networks for classifying handwritten digits.</p>
             <p>Check the /api/health endpoint for API status.</p>
-            <p>Use /api/predict/dense to use a dense model for prediction.</p>
-            <p>Use /api/predict/convolutional to use a convolutional model for prediction.</p>
+            <p>Use /api/available_models to view which models are available.</p>
+            <p>This endpoint will return a list of models in the following format:</p>
+            <div>
+            {
+                "models": [
+                    {
+                        "Name": ...,
+                        "Description": ...,
+                        "Endpoint Extension": ...
+                    }, ...
+                ]
+            }
+            </div>
+            <p>Send a POST request to /api/predict/{extension} to receive a prediction from the desired model.</p>
             <p>When calling any prediction endpoint, use the following JSON structure:</p>
             <div>
                 {
@@ -83,34 +101,20 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
-# API endpoint for prediction with a dense model
-@app.post("/api/predict/dense", response_model=PredictionResponse)
-def predict(image: Image28x28):
-    global dense_model
-    # Check if the dense model is available
-    if dense_model is None:
-        dense_model = load_if_exists(dense_model_path)
-
-    # Convert to NumPy and reshape for processing
-    array = np.array(image.pixels, dtype=np.float32)
-    data = flatten_inputs(array)
-
-    # Make a prediction
-    model_out = dense_model.predict(data, verbose=0)
-    return PredictionResponse(values = model_out.reshape(10).tolist())
+# API endpoint for acquiring information on available models
+@app.get("/api/available_models")
+def getAvailableModels():
+    arr = []
+    for model in app.state.data.values():
+        arr.append(model.get_client_API_info())
+    return JSONResponse(content={"models": arr})
 
 # API endpoint for prediction with a dense model
-@app.post("/api/predict/convolutional", response_model=PredictionResponse)
-def predict(image: Image28x28):
-    global convolutional_model
-    # Check if the dense model is available
-    if convolutional_model is None:
-        convolutional_model = load_if_exists(convolutional_model_path)
-
-    # Convert to NumPy and reshape for processing
+@app.post("/api/predict/{extension}", response_model=PredictionResponse)
+def predict(extension: str, image: Image28x28):
+    if extension not in app.state.data:
+        return PredictionResponse(values = [0] * 10)
+    
     array = np.array(image.pixels, dtype=np.float32)
-    data = inputs_as_square_32x32(array)
-
-    # Make a prediction
-    model_out = convolutional_model.predict(data, verbose=0)
+    model_out = app.state.data[extension].make_prediction(array)
     return PredictionResponse(values = model_out.reshape(10).tolist())

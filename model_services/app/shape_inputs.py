@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 
 # function for shaping and scaling inputs in preparation for models that accept flattened inputs
 def flatten_inputs(x):
@@ -23,3 +22,7 @@ def inputs_as_square_32x32(x):
     x = x.astype('float32')
     x /= 255
     return x
+
+available_functions = {'flatten' : flatten_inputs,
+                       'square' : inputs_as_square,
+                       '32x32' : inputs_as_square_32x32}
